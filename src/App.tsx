@@ -15,9 +15,10 @@ function parseHash(): Route {
   const seg = location.hash.replace(/^#\/?/, "").split("/");
   if (seg[0] === "l" && seg[1]) {
     const law = decodeURIComponent(seg[1]);
-    if (seg[2] === "a" && seg[3]) {
+    if (seg[2] === "a") {
+      const key = seg[3] ? decodeURIComponent(seg[3]) : undefined;
       const change = seg[4] !== undefined && seg[4] !== "" ? Number(seg[4]) : undefined;
-      return { view: "article", law, key: decodeURIComponent(seg[3]), change };
+      return { view: "article", law, key, change };
     }
     return { view: "map", law };
   }
@@ -32,8 +33,9 @@ function toHash(r: Route): string {
       return `#/l/${encodeURIComponent(r.law)}`;
     case "article":
       return (
-        `#/l/${encodeURIComponent(r.law)}/a/${encodeURIComponent(r.key ?? "")}` +
-        (r.change !== undefined ? `/${r.change}` : "")
+        `#/l/${encodeURIComponent(r.law)}/a` +
+        (r.key !== undefined ? `/${encodeURIComponent(r.key)}` : "") +
+        (r.key !== undefined && r.change !== undefined ? `/${r.change}` : "")
       );
   }
 }
