@@ -109,6 +109,25 @@ button {
 .app-head h1 {
   margin: 0;
   font-size: 1.15rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+  flex-wrap: wrap;
+}
+.home-link {
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 0;
+}
+.home-link:hover {
+  color: var(--accent);
+}
+.crumb-sep {
+  color: var(--muted);
+  font-weight: normal;
+}
+.crumb-law {
+  font-weight: 600;
 }
 .law-num {
   margin-left: 0.7em;
@@ -144,6 +163,49 @@ main {
 .hint {
   color: var(--ink-2);
   font-size: 0.85rem;
+}
+
+/* ---------- 法令一覧（トップ） ---------- */
+.law-cat h2 {
+  font-size: 0.95rem;
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--grid);
+  padding-bottom: 0.25rem;
+  margin: 1.4rem 0 0.6rem;
+}
+.law-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.6rem;
+}
+.law-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--grid);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+}
+.law-card:hover {
+  border-color: var(--accent);
+}
+.law-card-title {
+  font-weight: 600;
+  line-height: 1.4;
+}
+.law-card-num {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.law-card-stats {
+  font-size: 0.78rem;
+  color: var(--ink-2);
+}
+.law-card-stats .badge {
+  margin-left: 0;
 }
 
 /* ---------- ヒートマップ（機能2-A） ---------- */

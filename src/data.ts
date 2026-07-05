@@ -1,9 +1,24 @@
-import type { Article, Change, ChangeType, Dataset } from "./types";
+import type { Article, Change, ChangeType, Dataset, LawIndex } from "./types";
 
-export async function loadDataset(): Promise<Dataset> {
-  const res = await fetch(import.meta.env.BASE_URL + "data/minpo.json");
-  if (!res.ok) throw new Error(`データセットの読み込みに失敗しました (${res.status})`);
+async function getJson<T>(path: string): Promise<T> {
+  const res = await fetch(import.meta.env.BASE_URL + path);
+  if (!res.ok) throw new Error(`データの読み込みに失敗しました (${res.status}: ${path})`);
   return res.json();
+}
+
+export function loadIndex(): Promise<LawIndex> {
+  return getJson<LawIndex>("data/index.json");
+}
+
+const lawCache = new Map<string, Promise<Dataset>>();
+
+export function loadLaw(id: string): Promise<Dataset> {
+  let p = lawCache.get(id);
+  if (!p) {
+    p = getJson<Dataset>(`data/laws/${id}.json`);
+    lawCache.set(id, p);
+  }
+  return p;
 }
 
 export const todayStr = () => new Date().toISOString().slice(0, 10);

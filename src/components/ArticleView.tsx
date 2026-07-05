@@ -121,7 +121,9 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
             isBase ? (
               <>
                 <p className="hint">
-                  e-Gov収録開始時点（{snap.date}）の全文です。これより前の改正はデータソースの範囲外です。
+                  {data.latestOnly
+                    ? "この法令は現行版のみ収録しています（改正履歴・差分は収録対象外）。"
+                    : `e-Gov収録開始時点（${snap.date}）の全文です。これより前の改正はデータソースの範囲外です。`}
                 </p>
                 <PlainText lines={curLines} />
               </>

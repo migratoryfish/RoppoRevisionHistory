@@ -36,11 +36,31 @@ export interface Snapshot {
 }
 
 export interface Dataset {
+  lawId: string;
   lawTitle: string;
   lawNum: string;
+  category: string;
+  /** true = 現行版のみ収録（履歴・差分なし） */
+  latestOnly: boolean;
   generated: string;
   snapshots: Snapshot[];
   articles: Article[];
+}
+
+export interface LawIndexEntry {
+  id: string;
+  title: string;
+  num: string;
+  category: string;
+  latestOnly: boolean;
+  snapshots: number;
+  articles: number;
+  changed: number;
+}
+
+export interface LawIndex {
+  generated: string;
+  laws: LawIndexEntry[];
 }
 
 export type ChangeType = "add" | "mod" | "del";

@@ -57,6 +57,18 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
   const selEntries = selected ? (cells.get(selected.ri)?.get(selected.s) ?? []) : [];
   const selSnap = selected ? data.snapshots[selected.s] : null;
 
+  if (cols.length === 0) {
+    return (
+      <div className="heatmap-view">
+        <p className="hint">
+          {data.latestOnly
+            ? "この法令は現行版のみ収録しています（改正履歴は収録対象外）。「条文ビュー」から全文を参照できます。"
+            : "収録期間内（e-Govが履歴を保持する範囲）にこの法令の改正はありません。「条文ビュー」から全文を参照できます。"}
+        </p>
+      </div>
+    );
+  }
+
   let prevPart = "";
 
   return (
