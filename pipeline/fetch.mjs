@@ -1,5 +1,5 @@
 // e-Gov 法令API v2 から対象法令の全改正バージョンをダウンロードして data/raw/<lawId>/ にキャッシュする
-import { mkdirSync, existsSync, writeFileSync } from "node:fs";
+import { mkdirSync, existsSync, writeFileSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LAWS } from "./laws.mjs";
@@ -24,6 +24,28 @@ async function getJson(url, tries = 3) {
 
 let fetched = 0;
 let skipped = 0;
+let attachments = 0;
+
+// 添付ファイル（様式PDF等）を data/raw/<lawId>/attachments/<law_revision_id>/<basename> に保存
+async function fetchAttachments(lawDir, data) {
+  const files = data.attached_files_info?.attached_files ?? [];
+  for (const f of files) {
+    const base = f.src.split("/").pop();
+    const dest = join(lawDir, "attachments", f.law_revision_id, base);
+    if (existsSync(dest)) continue;
+    mkdirSync(dirname(dest), { recursive: true });
+    const url = `${API}/attachment/${f.law_revision_id}?src=${encodeURIComponent(f.src)}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn(`\n  添付取得失敗 ${res.status}: ${f.law_revision_id} ${f.src}`);
+      continue;
+    }
+    writeFileSync(dest, Buffer.from(await res.arrayBuffer()));
+    attachments++;
+    process.stdout.write("a");
+    await sleep(300);
+  }
+}
 
 for (const law of LAWS) {
   const dir = join(rawRoot, law.id);
@@ -35,17 +57,22 @@ for (const law of LAWS) {
   process.stdout.write(`${title} (${targets.length}版${law.latestOnly ? "・現行のみ" : ""}): `);
   for (const rev of targets) {
     const file = join(dir, `${rev.law_revision_id}.json`);
+    let data;
     if (existsSync(file)) {
       skipped++;
-      continue;
+      const text = readFileSync(file, "utf8");
+      if (!text.includes('"attached_files":[{')) continue; // 添付なし
+      data = JSON.parse(text);
+    } else {
+      data = await getJson(`${API}/law_data/${rev.law_revision_id}`);
+      writeFileSync(file, JSON.stringify(data));
+      fetched++;
+      process.stdout.write(".");
+      await sleep(300); // APIへの負荷配慮
     }
-    const data = await getJson(`${API}/law_data/${rev.law_revision_id}`);
-    writeFileSync(file, JSON.stringify(data));
-    fetched++;
-    process.stdout.write(".");
-    await sleep(300); // APIへの負荷配慮
+    await fetchAttachments(dir, data);
   }
   console.log(" ok");
   await sleep(300);
 }
-console.log(`done: fetched=${fetched} skipped=${skipped}`);
+console.log(`done: fetched=${fetched} skipped=${skipped} attachments=${attachments}`);

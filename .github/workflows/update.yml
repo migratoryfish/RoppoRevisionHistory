@@ -1,0 +1,72 @@
+name: データ更新とデプロイ
+
+on:
+  schedule:
+    # 毎週月曜 06:00 JST（日曜 21:00 UTC）に e-Gov の更新を取り込む
+    - cron: "0 21 * * 0"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths-ignore:
+      - "public/data/**" # 自動データコミットでの再トリガーを防ぐ
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-deploy
+  cancel-in-progress: false
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 依存関係のインストール
+        run: npm ci
+
+      - name: 生データキャッシュの復元（e-Gov取得済み分は再取得しない）
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: raw-${{ hashFiles('pipeline/laws.mjs') }}-${{ github.run_id }}
+          restore-keys: |
+            raw-${{ hashFiles('pipeline/laws.mjs') }}-
+            raw-
+
+      - name: e-Govから増分取得
+        run: node pipeline/fetch.mjs
+
+      - name: データセット生成
+        run: node pipeline/build.mjs
+
+      - name: データ差分があれば main にコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if git diff --cached --quiet; then
+            echo "データ変更なし"
+          else
+            git commit -m "data: e-Gov自動更新 ($(date -u +%Y-%m-%d))"
+            git push
+          fi
+
+      - name: ビルド
+        run: npm run build
+
+      - name: gh-pages へデプロイ
+        run: |
+          cd dist
+          git init -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "deploy: 自動更新 ($(date -u +%Y-%m-%d))"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages

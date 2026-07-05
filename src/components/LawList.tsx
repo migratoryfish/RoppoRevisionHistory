@@ -31,7 +31,9 @@ export default function LawList({ index, onOpen }: Props) {
                 <span className="law-card-title">{law.title}</span>
                 <span className="law-card-num">{law.num}</span>
                 <span className="law-card-stats">
-                  {law.latestOnly ? (
+                  {law.manual ? (
+                    <span className="badge base-badge">手動収録{law.snapshots <= 1 ? "・現行版のみ" : `・${law.snapshots}版`}</span>
+                  ) : law.latestOnly ? (
                     <span className="badge base-badge">現行版のみ</span>
                   ) : law.snapshots <= 1 ? (
                     <span className="badge base-badge">収録期間内の改正なし</span>

@@ -3,6 +3,7 @@ import { TYPE_LABEL, changeType, displayTitle, todayStr } from "../data";
 import { blameLines, diffLineSets } from "../diff";
 import type { Article, Dataset, Line } from "../types";
 import DiffView from "./DiffView";
+import { FigEmbed, LineText } from "./LineContent";
 import Timeline from "./Timeline";
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 
 export default function ArticleView({ data, article, changeIdx, onSelectChange, onOpenArticle }: Props) {
   const [tab, setTab] = useState<"diff" | "blame">("diff");
+  const [diffMode, setDiffMode] = useState<"unified" | "split">("unified");
   const today = todayStr();
 
   const change = article.changes[changeIdx];
@@ -33,6 +35,14 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
 
   const curLines: Line[] = change.gone ? [] : (change.lines ?? []);
   const diffRows = useMemo(() => diffLineSets(prevLines, curLines), [prevLines, curLines]);
+
+  // 様式・図の添付ファイル参照（行テキスト → 添付パス）
+  const figBase = `${import.meta.env.BASE_URL}data/attachments/${data.lawId}/`;
+  const figMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const l of [...prevLines, ...curLines]) if (l.f) m.set(l.t, l.f);
+    return m;
+  }, [prevLines, curLines]);
 
   const blame = useMemo(
     () => (change.gone ? [] : blameLines(article.changes, changeIdx)),
@@ -53,12 +63,22 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
     <div className="article-view">
       <header className="art-head">
         <div className="crumb">
-          {article.part} › {article.chapter}
+          {article.part}
+          {article.chapter ? " › " + article.chapter : ""}
         </div>
         <h2>
           {title}
           {state?.caption && <span className="caption">{state.caption}</span>}
         </h2>
+        {data.manual && (
+          <p className="hint manual-note">
+            手動収録データ｜出典:{" "}
+            <a href={data.source} target="_blank" rel="noreferrer">
+              {data.source}
+            </a>
+            {data.sourceNote && <>｜{data.sourceNote}</>}
+          </p>
+        )}
       </header>
 
       <Timeline data={data} article={article} selectedIdx={changeIdx} onSelect={onSelectChange} />
@@ -69,7 +89,7 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
             ← 前の版
           </button>
           <div className="version-title">
-            {snap.date} 施行
+            {snap.date} {data.manual ? "適用" : "施行"}
             {future && <span className="badge future-badge">未施行</span>}
             {isBase && <span className="badge base-badge">収録開始時点（差分の起点）</span>}
             {type && <span className={"type-badge " + type}>{TYPE_LABEL[type]}</span>}
@@ -78,7 +98,7 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
             次の版 →
           </button>
         </div>
-        {!isBase && (
+        {!isBase && snap.amendments.length > 0 && (
           <ul className="amendments">
             {snap.amendments.map((am, i) => (
               <li key={i}>
@@ -105,7 +125,7 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
               ))}
             </p>
           )}
-          <DiffView rows={diffRows} />
+          <DiffView rows={diffRows} figBase={figBase} figMap={figMap} />
         </section>
       ) : (
         <>
@@ -116,19 +136,31 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
             <button className={tab === "blame" ? "active" : ""} onClick={() => setTab("blame")}>
               全文＋由来
             </button>
+            {tab === "diff" && !isBase && (
+              <span className="mode-toggle">
+                <button className={diffMode === "unified" ? "active" : ""} onClick={() => setDiffMode("unified")}>
+                  統合
+                </button>
+                <button className={diffMode === "split" ? "active" : ""} onClick={() => setDiffMode("split")}>
+                  新旧対照
+                </button>
+              </span>
+            )}
           </div>
           {tab === "diff" ? (
             isBase ? (
               <>
                 <p className="hint">
-                  {data.latestOnly
-                    ? "この法令は現行版のみ収録しています（改正履歴・差分は収録対象外）。"
-                    : `e-Gov収録開始時点（${snap.date}）の全文です。これより前の改正はデータソースの範囲外です。`}
+                  {data.manual
+                    ? `${snap.date} 時点として収録した全文です。`
+                    : data.latestOnly
+                      ? "この法令は現行版のみ収録しています（改正履歴・差分は収録対象外）。"
+                      : `e-Gov収録開始時点（${snap.date}）の全文です。これより前の改正はデータソースの範囲外です。`}
                 </p>
-                <PlainText lines={curLines} />
+                <PlainText lines={curLines} figBase={figBase} />
               </>
             ) : (
-              <DiffView rows={diffRows} />
+              <DiffView rows={diffRows} mode={diffMode} figBase={figBase} figMap={figMap} />
             )
           ) : (
             <BlameView
@@ -136,6 +168,7 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
               article={article}
               lines={curLines}
               blame={blame}
+              figBase={figBase}
               onJump={(ci) => {
                 onSelectChange(ci);
                 setTab("diff");
@@ -148,14 +181,44 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
   );
 }
 
-function PlainText({ lines }: { lines: Line[] }) {
+/** 全文表示: 連続する表行は実HTMLテーブルとして描画する */
+function PlainText({ lines, figBase }: { lines: Line[]; figBase?: string }) {
+  const blocks: (Line | Line[])[] = [];
+  for (const l of lines) {
+    const isTableRow = l.t.includes("｜") && !l.f;
+    const last = blocks[blocks.length - 1];
+    if (isTableRow && Array.isArray(last)) last.push(l);
+    else if (isTableRow) blocks.push([l]);
+    else blocks.push(l);
+  }
   return (
     <div className="plain-text">
-      {lines.map((l, i) => (
-        <p key={i} style={{ paddingLeft: `${l.i * 1.4}em` }}>
-          {l.t}
-        </p>
-      ))}
+      {blocks.map((b, i) =>
+        Array.isArray(b) ? (
+          <div key={i} className="law-table-wrap">
+            <table className="law-table">
+              <tbody>
+                {b.map((row, ri) => (
+                  <tr key={ri}>
+                    {row.t.split("｜").map((cell, ci) => (
+                      <td key={ci}>{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : b.f && figBase ? (
+          <div key={i} className="fig-block" style={{ paddingLeft: `${b.i * 1.4}em` }}>
+            <span>{b.t}</span>
+            <FigEmbed url={figBase + b.f} />
+          </div>
+        ) : (
+          <p key={i} style={{ paddingLeft: `${b.i * 1.4}em` }}>
+            {b.t}
+          </p>
+        ),
+      )}
     </div>
   );
 }
@@ -166,12 +229,14 @@ function BlameView({
   article,
   lines,
   blame,
+  figBase,
   onJump,
 }: {
   data: Dataset;
   article: Article;
   lines: Line[];
   blame: number[];
+  figBase?: string;
   onJump: (changeIdx: number) => void;
 }) {
   const total = article.changes.length;
@@ -197,7 +262,9 @@ function BlameView({
             >
               {isRunStart ? (isBase ? "収録時" : snap.date.slice(0, 7)) : ""}
             </button>
-            <p style={{ paddingLeft: `${l.i * 1.4}em` }}>{l.t}</p>
+            <p style={{ paddingLeft: `${l.i * 1.4}em` }}>
+              <LineText line={l} figBase={figBase} />
+            </p>
           </div>
         );
       })}

@@ -94,6 +94,31 @@ function inlineSegs(oldT: string, newT: string): { del: Seg[]; add: Seg[] } {
   return { del, add };
 }
 
+/** 新旧対照表（左右分割）用: 削除行と追加行を対にして並べる */
+export interface SplitRow {
+  left: DiffRow | null;
+  right: DiffRow | null;
+}
+
+export function toSplitRows(rows: DiffRow[]): SplitRow[] {
+  const out: SplitRow[] = [];
+  let i = 0;
+  while (i < rows.length) {
+    if (rows[i].kind === "ctx") {
+      out.push({ left: rows[i], right: rows[i] });
+      i++;
+      continue;
+    }
+    const dels: DiffRow[] = [];
+    const adds: DiffRow[] = [];
+    while (i < rows.length && rows[i].kind === "del") dels.push(rows[i++]);
+    while (i < rows.length && rows[i].kind === "add") adds.push(rows[i++]);
+    const n = Math.max(dels.length, adds.length);
+    for (let k = 0; k < n; k++) out.push({ left: dels[k] ?? null, right: adds[k] ?? null });
+  }
+  return out;
+}
+
 /**
  * 由来（git blame 相当）: changes[upTo] の各行が、どの変更（changes のインデックス）で
  * 導入されたかを返す。
