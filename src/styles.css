@@ -241,6 +241,10 @@ main {
 }
 .hm-part {
   grid-column: 1 / -1;
+  /* font-sizeはdiv側に置く: 行ボックスの高さ（strut）はdiv自身のフォントで決まるため */
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-2);
   padding-top: 0.5rem;
 }
 /* 全幅要素自体はstickyにできない（動く余地がない）ため、内側のspanを固定する */
@@ -248,11 +252,6 @@ main {
   position: sticky;
   left: 0;
   display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--ink-2);
-  background: var(--surface);
-  z-index: 1;
 }
 .hm-label {
   position: sticky;
@@ -690,6 +689,10 @@ table.diff.split td.code {
 }
 table.diff.split td.code.del { background: var(--del-bg); }
 table.diff.split td.code.add { background: var(--add-bg); }
+/* 半幅カラムで表のセルが縦に折り返すと列がずれるため、折り返さず横スクロールに逃がす */
+table.diff.split .trow {
+  flex-wrap: nowrap;
+}
 table.diff.split td.code.none {
   background: repeating-linear-gradient(
     45deg,
@@ -700,6 +703,11 @@ table.diff.split td.code.none {
   );
 }
 
+.gone-diff-head {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0.6rem 0 0.4rem;
+}
 .mode-toggle {
   margin-left: auto;
   display: inline-flex;

@@ -125,7 +125,10 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
               ))}
             </p>
           )}
-          <DiffView rows={diffRows} figBase={figBase} figMap={figMap} />
+          <div className="gone-diff-head">
+            <ModeToggle mode={diffMode} onChange={setDiffMode} />
+          </div>
+          <DiffView rows={diffRows} mode={diffMode} figBase={figBase} figMap={figMap} />
         </section>
       ) : (
         <>
@@ -136,16 +139,7 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
             <button className={tab === "blame" ? "active" : ""} onClick={() => setTab("blame")}>
               全文＋由来
             </button>
-            {tab === "diff" && !isBase && (
-              <span className="mode-toggle">
-                <button className={diffMode === "unified" ? "active" : ""} onClick={() => setDiffMode("unified")}>
-                  統合
-                </button>
-                <button className={diffMode === "split" ? "active" : ""} onClick={() => setDiffMode("split")}>
-                  新旧対照
-                </button>
-              </span>
-            )}
+            {tab === "diff" && !isBase && <ModeToggle mode={diffMode} onChange={setDiffMode} />}
           </div>
           {tab === "diff" ? (
             isBase ? (
@@ -178,6 +172,25 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
         </>
       )}
     </div>
+  );
+}
+
+function ModeToggle({
+  mode,
+  onChange,
+}: {
+  mode: "unified" | "split";
+  onChange: (m: "unified" | "split") => void;
+}) {
+  return (
+    <span className="mode-toggle">
+      <button className={mode === "unified" ? "active" : ""} onClick={() => onChange("unified")}>
+        統合
+      </button>
+      <button className={mode === "split" ? "active" : ""} onClick={() => onChange("split")}>
+        新旧対照
+      </button>
+    </span>
   );
 }
 

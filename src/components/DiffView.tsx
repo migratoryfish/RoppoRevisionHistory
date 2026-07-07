@@ -10,7 +10,7 @@ interface Props {
 }
 
 /** 機能1: GitHub風の差分表示（行 = 項・号・表の行、変更行内は文字レベルのハイライト） */
-export default function DiffView({ rows, mode = "unified", figBase, figMap }: Props) {
+export default function DiffView({ rows, mode = "split", figBase, figMap }: Props) {
   if (mode === "split") {
     const srows = toSplitRows(rows);
     return (
@@ -30,7 +30,15 @@ export default function DiffView({ rows, mode = "unified", figBase, figMap }: Pr
                   className={"code " + (r.left ? (r.left.kind === "ctx" ? "ctx" : "del") : "none")}
                   style={r.left ? { paddingLeft: `${r.left.indent * 1.4 + 0.8}em` } : undefined}
                 >
-                  {r.left && <SegContent segs={r.left.segs} kind="del" figBase={figBase} figMap={figMap} />}
+                  {/* ctx行は左右が同一内容のため、様式PDFの埋め込みは右（改正後）側だけに出す */}
+                  {r.left && (
+                    <SegContent
+                      segs={r.left.segs}
+                      kind="del"
+                      figBase={figBase}
+                      figMap={r.left.kind === "ctx" ? undefined : figMap}
+                    />
+                  )}
                 </td>
                 <td className="ln">{r.right?.newNo ?? ""}</td>
                 <td
