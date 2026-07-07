@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { toSplitRows, type DiffRow } from "../diff";
 import { SegContent } from "./LineContent";
 
@@ -11,8 +12,8 @@ interface Props {
 
 /** 機能1: GitHub風の差分表示（行 = 項・号・表の行、変更行内は文字レベルのハイライト） */
 export default function DiffView({ rows, mode = "split", figBase, figMap }: Props) {
+  const srows = useMemo(() => (mode === "split" ? toSplitRows(rows) : []), [mode, rows]);
   if (mode === "split") {
-    const srows = toSplitRows(rows);
     return (
       <div className="diff-wrap">
         <table className="diff split">

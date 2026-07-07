@@ -19,6 +19,15 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
   const [diffMode, setDiffMode] = useState<"unified" | "split">("split");
   const today = todayStr();
 
+  // 別の条に移ったらタブを差分に戻す（同一条内の版移動では維持）。
+  // diffModeはセッション中の表示設定として持ち越す
+  const articleId = data.lawId + "/" + article.key;
+  const [prevArticleId, setPrevArticleId] = useState(articleId);
+  if (articleId !== prevArticleId) {
+    setPrevArticleId(articleId);
+    setTab("diff");
+  }
+
   const change = article.changes[changeIdx];
   const snap = data.snapshots[change.s];
   const isBase = changeIdx === 0 && change.s === 0;
