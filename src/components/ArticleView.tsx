@@ -142,12 +142,14 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
       ) : (
         <>
           <div className="tabs">
-            <button className={tab === "diff" ? "active" : ""} onClick={() => setTab("diff")}>
-              差分（前の版と比較）
-            </button>
-            <button className={tab === "blame" ? "active" : ""} onClick={() => setTab("blame")}>
-              全文＋由来
-            </button>
+            <span className="seg">
+              <button className={tab === "diff" ? "active" : ""} onClick={() => setTab("diff")}>
+                差分（前の版と比較）
+              </button>
+              <button className={tab === "blame" ? "active" : ""} onClick={() => setTab("blame")}>
+                全文＋由来
+              </button>
+            </span>
             {tab === "diff" && !isBase && <ModeToggle mode={diffMode} onChange={setDiffMode} />}
           </div>
           {tab === "diff" ? (
@@ -192,7 +194,7 @@ function ModeToggle({
   onChange: (m: "unified" | "split") => void;
 }) {
   return (
-    <span className="mode-toggle">
+    <span className="seg mode-toggle">
       <button className={mode === "split" ? "active" : ""} onClick={() => onChange("split")}>
         新旧対照
       </button>

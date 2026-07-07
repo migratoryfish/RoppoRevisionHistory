@@ -576,21 +576,28 @@ main {
   font-weight: 600;
 }
 
+/* タブ行は差分テーブル（.diff-wrap）と同じ幅に揃え、トグルをテーブル右端＝「改正後」の右端に寄せる */
 .tabs {
   display: flex;
-  gap: 0.3rem;
+  align-items: center;
   margin: 0.6rem 0;
+  max-width: 960px;
 }
-.tabs button {
-  padding: 0.25rem 0.9rem;
+
+/* 結合ピル型のセグメントコントロール（タブ・統合/新旧対照トグル共通） */
+.seg {
+  display: inline-flex;
   border: 1px solid var(--grid);
   border-radius: 999px;
-  font-size: 0.82rem;
+  overflow: hidden;
+}
+.seg button {
+  padding: 0.25rem 0.9rem;
+  font-size: 0.8rem;
   color: var(--ink-2);
 }
-.tabs button.active {
+.seg button.active {
   background: var(--accent);
-  border-color: var(--accent);
   color: #fff;
   font-weight: 600;
 }
@@ -705,24 +712,12 @@ table.diff.split td.code.none {
 
 .gone-diff-head {
   display: flex;
+  justify-content: flex-end;
+  max-width: 960px;
   margin: 0.6rem 0 0.4rem;
 }
-/* margin-left: auto だとタブ行（全幅）の右端＝ウインドウ端まで飛ぶため、タブの隣に置く */
 .mode-toggle {
-  margin-left: 0.8rem;
-  display: inline-flex;
-  border: 1px solid var(--grid);
-  border-radius: 999px;
-  overflow: hidden;
-}
-.mode-toggle button {
-  padding: 0.2rem 0.8rem;
-  font-size: 0.78rem;
-  color: var(--ink-2);
-}
-.mode-toggle button.active {
-  background: var(--accent);
-  color: #fff;
+  margin-left: auto;
 }
 
 /* ---------- 様式PDF ---------- */
