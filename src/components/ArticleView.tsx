@@ -193,11 +193,11 @@ function ModeToggle({
 }) {
   return (
     <span className="mode-toggle">
-      <button className={mode === "unified" ? "active" : ""} onClick={() => onChange("unified")}>
-        統合
-      </button>
       <button className={mode === "split" ? "active" : ""} onClick={() => onChange("split")}>
         新旧対照
+      </button>
+      <button className={mode === "unified" ? "active" : ""} onClick={() => onChange("unified")}>
+        統合
       </button>
     </span>
   );

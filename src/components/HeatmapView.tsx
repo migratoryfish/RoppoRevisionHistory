@@ -13,6 +13,10 @@ interface Props {
   onOpenArticle: (key: string, changeIdx: number) => void;
 }
 
+// 条文ビューへ遷移するとこのコンポーネントは破棄されるため、
+// 選択中のセルを法令IDごとに保持して改正マップに戻ったとき復元する
+const selectedCellCache = new Map<string, { ri: number; s: number }>();
+
 /** 機能2-A: 章 × 施行日の改正ヒートマップ（セル色 = 変更された条の数） */
 export default function HeatmapView({ data, onOpenArticle }: Props) {
   const today = todayStr();
@@ -48,7 +52,14 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
     return { rows, cells };
   }, [data]);
 
-  const [selected, setSelected] = useState<{ ri: number; s: number } | null>(null);
+  const [selected, setSelected] = useState<{ ri: number; s: number } | null>(
+    () => selectedCellCache.get(data.lawId) ?? null,
+  );
+  const selectCell = (sel: { ri: number; s: number } | null) => {
+    setSelected(sel);
+    if (sel) selectedCellCache.set(data.lawId, sel);
+    else selectedCellCache.delete(data.lawId);
+  };
   const [tip, setTip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const heatClass = (n: number) =>
@@ -111,7 +122,7 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
                       "hm-cell " + heatClass(n) + (snap.date > today ? " future" : "") + (isSel ? " sel" : "")
                     }
                     disabled={n === 0}
-                    onClick={() => setSelected(isSel ? null : { ri, s })}
+                    onClick={() => selectCell(isSel ? null : { ri, s })}
                     onMouseEnter={(e) => {
                       if (n === 0) return;
                       const t: Record<ChangeType, number> = { add: 0, mod: 0, del: 0 };

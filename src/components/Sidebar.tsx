@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { displayTitle, isGoneNow, latestState, realChangeCount } from "../data";
 import type { Article, Dataset } from "../types";
 
@@ -10,6 +10,20 @@ interface Props {
 
 export default function Sidebar({ data, activeKey, onPick }: Props) {
   const [q, setQ] = useState("");
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // 改正マップの一覧などから遷移したとき、選択中の条が一覧の画面外なら中央付近まで
+  // スクロールする。scrollIntoView はページ全体も動かしてしまうため scrollTop を直接操作する
+  useEffect(() => {
+    const list = listRef.current;
+    const el = list?.querySelector<HTMLElement>(".art-item.active");
+    if (!list || !el) return;
+    const lr = list.getBoundingClientRect();
+    const er = el.getBoundingClientRect();
+    if (er.top < lr.top || er.bottom > lr.bottom) {
+      list.scrollTop += er.top - lr.top - (lr.height - er.height) / 2;
+    }
+  }, [activeKey]);
 
   const filtered = useMemo(() => {
     const query = q.trim();
@@ -35,7 +49,7 @@ export default function Sidebar({ data, activeKey, onPick }: Props) {
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
-      <div className="art-list">
+      <div className="art-list" ref={listRef}>
         {filtered.map((a) => {
           const group = a.part + "｜" + a.chapter;
           const header = group !== prevGroup ? <div key={"g" + a.key} className="group-head">{group}</div> : null;

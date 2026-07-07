@@ -705,11 +705,11 @@ table.diff.split td.code.none {
 
 .gone-diff-head {
   display: flex;
-  justify-content: flex-end;
   margin: 0.6rem 0 0.4rem;
 }
+/* margin-left: auto だとタブ行（全幅）の右端＝ウインドウ端まで飛ぶため、タブの隣に置く */
 .mode-toggle {
-  margin-left: auto;
+  margin-left: 0.8rem;
   display: inline-flex;
   border: 1px solid var(--grid);
   border-radius: 999px;
