@@ -16,7 +16,7 @@ interface Props {
 
 export default function ArticleView({ data, article, changeIdx, onSelectChange, onOpenArticle }: Props) {
   const [tab, setTab] = useState<"diff" | "blame">("diff");
-  const [diffMode, setDiffMode] = useState<"unified" | "split">("unified");
+  const [diffMode, setDiffMode] = useState<"unified" | "split">("split");
   const today = todayStr();
 
   const change = article.changes[changeIdx];

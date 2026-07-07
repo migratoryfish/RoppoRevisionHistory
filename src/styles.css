@@ -241,12 +241,18 @@ main {
 }
 .hm-part {
   grid-column: 1 / -1;
+  padding-top: 0.5rem;
+}
+/* 全幅要素自体はstickyにできない（動く余地がない）ため、内側のspanを固定する */
+.hm-part span {
+  position: sticky;
+  left: 0;
+  display: inline-block;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--ink-2);
-  padding-top: 0.5rem;
-  position: sticky;
-  left: 0;
+  background: var(--surface);
+  z-index: 1;
 }
 .hm-label {
   position: sticky;

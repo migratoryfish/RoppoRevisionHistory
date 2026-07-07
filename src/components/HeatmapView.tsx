@@ -89,7 +89,11 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
           ))}
           {rows.map((row, ri) => {
             const partHeader =
-              row.part !== prevPart ? <div key={"p" + ri} className="hm-part">{row.part || "（前置き）"}</div> : null;
+              row.part !== prevPart ? (
+                <div key={"p" + ri} className="hm-part">
+                  <span>{row.part || "（前置き）"}</span>
+                </div>
+              ) : null;
             prevPart = row.part;
             return [
               partHeader,
