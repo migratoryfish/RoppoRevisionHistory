@@ -52,6 +52,14 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
     return { rows, cells };
   }, [data]);
 
+  // 変更された条が1つもない列 = 改正法の施行はあったが収録範囲の条文に変化のない施行日。
+  // 細い灰色の空列として描く（日付はホバーで表示）
+  const colHasChange = useMemo(() => {
+    const set = new Set<number>();
+    for (const byS of cells.values()) for (const [s, list] of byS) if (list.length > 0) set.add(s);
+    return set;
+  }, [cells]);
+
   const [selected, setSelected] = useState<{ ri: number; s: number } | null>(
     () => selectedCellCache.get(data.lawId) ?? null,
   );
@@ -90,22 +98,28 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
       <div className="hm-scroll">
         <div
           className="hm-grid"
-          style={{ gridTemplateColumns: `minmax(230px, max-content) repeat(${cols.length}, 20px)` }}
+          style={{
+            gridTemplateColumns:
+              "minmax(230px, max-content) " +
+              cols.map(({ s }) => (colHasChange.has(s) ? "20px" : "10px")).join(" "),
+          }}
         >
           <div className="hm-corner" />
-          {cols.map(({ snap, s }) => (
-            <div
-              key={s}
-              className={"hm-date" + (snap.date > today ? " future" : "")}
-              title={
-                isUndeterminedDate(snap.date)
-                  ? "施行日未確定（施行日を定める政令等の公布待ち）"
-                  : snap.date + (snap.date > today ? "（未施行・施行予定）" : "")
-              }
-            >
-              {isUndeterminedDate(snap.date) ? "未確定" : snap.date}
-            </div>
-          ))}
+          {cols.map(({ snap, s }) => {
+            const empty = !colHasChange.has(s);
+            const dateLabel = isUndeterminedDate(snap.date)
+              ? "施行日未確定（施行日を定める政令等の公布待ち）"
+              : snap.date + (snap.date > today ? "（未施行・施行予定）" : "");
+            return (
+              <div
+                key={s}
+                className={"hm-date" + (snap.date > today ? " future" : "") + (empty ? " empty-col" : "")}
+                title={empty ? dateLabel + "｜施行はあったが収録範囲の条文に変更なし" : dateLabel}
+              >
+                {empty ? "" : isUndeterminedDate(snap.date) ? "未確定" : snap.date}
+              </div>
+            );
+          })}
           {rows.map((row, ri) => {
             const partHeader =
               row.part !== prevPart ? (
@@ -127,7 +141,11 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
                   <button
                     key={ri + "-" + s}
                     className={
-                      "hm-cell " + heatClass(n) + (snap.date > today ? " future" : "") + (isSel ? " sel" : "")
+                      "hm-cell " +
+                      heatClass(n) +
+                      (snap.date > today ? " future" : "") +
+                      (isSel ? " sel" : "") +
+                      (colHasChange.has(s) ? "" : " empty-col")
                     }
                     disabled={n === 0}
                     onClick={() => selectCell(isSel ? null : { ri, s })}
@@ -169,6 +187,10 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
         <span className="legend-item">
           <i className="legend-swatch future-sw" />
           破線 = 未施行（施行予定）
+        </span>
+        <span className="legend-item">
+          <i className="legend-swatch empty-sw" />
+          細い灰色列 = 施行日はあるが収録範囲の条文に変更なし（日付はホバーで表示）
         </span>
       </div>
 

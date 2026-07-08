@@ -278,19 +278,8 @@ function buildArticleHistory(snapshotArticleLists) {
   return { articles, figRefs };
 }
 
-/**
- * どの条の変更イベントからも参照されないスナップショットを取り除き、s を振り直す。
- * （改正はあったが収録対象の本則・別表に変化がなかった施行日が改正マップの空列になるのを防ぐ）
- */
-function pruneSnapshots(snapshots, articles) {
-  const used = new Set();
-  for (const a of articles) for (const c of a.changes) used.add(c.s);
-  if (used.size === snapshots.length) return snapshots;
-  const keep = snapshots.map((_, i) => i).filter((i) => used.has(i));
-  const remap = new Map(keep.map((oldIdx, newIdx) => [oldIdx, newIdx]));
-  for (const a of articles) for (const c of a.changes) c.s = remap.get(c.s);
-  return keep.map((i) => snapshots[i]);
-}
+// 注: どの条からも参照されないスナップショット（改正法の施行はあったが収録範囲の
+// 条文に変化がない施行日）もデータに残す。改正マップ側が細い灰色の空列として描く
 
 // ---- e-Gov法令 1件分のデータセット構築 -------------------------------------
 
@@ -329,10 +318,7 @@ function buildLaw(cfg) {
       category: cfg.category,
       latestOnly: cfg.latestOnly === true,
       generated: new Date().toISOString().slice(0, 10),
-      snapshots: pruneSnapshots(
-        snapshots.map(({ date, amendments }) => ({ date, amendments })),
-        articles,
-      ),
+      snapshots: snapshots.map(({ date, amendments }) => ({ date, amendments })),
       articles,
     },
     figRefs,
@@ -407,7 +393,7 @@ function buildManual(slug) {
     source: meta.source ?? "",
     sourceNote: meta.sourceNote ?? "",
     generated: new Date().toISOString().slice(0, 10),
-    snapshots: pruneSnapshots(snapshots, articles),
+    snapshots,
     articles,
   };
 }

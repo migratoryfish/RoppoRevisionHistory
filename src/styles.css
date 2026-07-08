@@ -294,6 +294,12 @@ main {
 .hm-cell.sel {
   box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink);
 }
+/* 空列（施行はあったが収録範囲の条文に変更のない施行日）: 細い灰色の帯として残す */
+.hm-cell.empty-col {
+  background: color-mix(in oklab, var(--grid) 30%, transparent);
+  border-color: transparent;
+  border-radius: 2px;
+}
 
 .hm-legend {
   display: flex;
@@ -325,6 +331,10 @@ main {
 .legend-swatch.future-sw {
   outline: 1.5px dashed var(--accent);
   outline-offset: -1px;
+}
+.legend-swatch.empty-sw {
+  width: 6px;
+  background: color-mix(in oklab, var(--grid) 30%, transparent);
 }
 
 .tooltip {
