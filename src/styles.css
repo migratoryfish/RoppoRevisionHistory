@@ -142,6 +142,13 @@ button {
   font-size: 0.72rem;
   color: var(--muted);
 }
+.app-version {
+  margin-left: 0.6rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--grid);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
 .app-tabs {
   display: flex;
   gap: 0.3rem;

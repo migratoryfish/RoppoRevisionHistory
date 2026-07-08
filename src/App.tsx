@@ -139,7 +139,10 @@ export default function App() {
             </button>
           </nav>
         )}
-        <div className="data-note">データ: e-Gov 法令API v2（{index.generated} 取得）｜施行日ベース</div>
+        <div className="data-note">
+          データ: e-Gov 法令API v2（{index.generated} 取得）｜施行日ベース
+          <span className="app-version">v{__APP_VERSION__}</span>
+        </div>
       </header>
       <main>{body}</main>
     </div>
