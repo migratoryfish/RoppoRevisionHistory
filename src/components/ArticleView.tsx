@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { TYPE_LABEL, changeType, displayTitle, todayStr } from "../data";
-import { blameLines, diffLineSets } from "../diff";
-import type { Article, Dataset, Line } from "../types";
+import { TYPE_LABEL, changeType, displayTitle, isUndeterminedDate, todayStr } from "../data";
+import { blameLines, diffLineSets, inlineSegs } from "../diff";
+import type { Article, Change, Dataset, Line } from "../types";
 import DiffView from "./DiffView";
 import { FigEmbed, LineText } from "./LineContent";
 import Timeline from "./Timeline";
@@ -34,16 +34,30 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
   const type = isBase ? null : changeType(article, changeIdx);
 
   // 直前の存在バージョン（diffの比較元）
-  const prevLines: Line[] = useMemo(() => {
+  const prevChange: Change | null = useMemo(() => {
     for (let i = changeIdx - 1; i >= 0; i--) {
       const c = article.changes[i];
-      if (!c.gone && c.lines) return c.lines;
+      if (!c.gone && c.lines) return c;
     }
-    return [];
+    return null;
   }, [article, changeIdx]);
+  const prevLines: Line[] = prevChange?.lines ?? [];
 
   const curLines: Line[] = change.gone ? [] : (change.lines ?? []);
   const diffRows = useMemo(() => diffLineSets(prevLines, curLines), [prevLines, curLines]);
+
+  // 見出し・条名の変更（本文diffには現れないため、差分表示の先頭行として別途示す）
+  const headDiff = useMemo(() => {
+    if (!prevChange || change.gone) return null;
+    const headOf = (c: Change) => (c.title ?? "") + (c.caption ?? "");
+    const o = headOf(prevChange);
+    const n = headOf(change);
+    return o === n ? null : inlineSegs(o, n);
+  }, [prevChange, change]);
+
+  // 本文に一切変更がない改正（見出しのみの改正・消滅前と同一内容での復活）への注記
+  const noBodyChange =
+    !isBase && !change.gone && prevChange !== null && diffRows.every((r) => r.kind === "ctx");
 
   // 様式・図の添付ファイル参照（行テキスト → 添付パス）
   const figBase = `${import.meta.env.BASE_URL}data/attachments/${data.lawId}/`;
@@ -98,8 +112,8 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
             ← 前の版
           </button>
           <div className="version-title">
-            {snap.date} {data.manual ? "適用" : "施行"}
-            {future && <span className="badge future-badge">未施行</span>}
+            {isUndeterminedDate(snap.date) ? "施行日未確定" : `${snap.date} ${data.manual ? "適用" : "施行"}`}
+            {future && !isUndeterminedDate(snap.date) && <span className="badge future-badge">未施行</span>}
             {isBase && <span className="badge base-badge">収録開始時点（差分の起点）</span>}
             {type && <span className={"type-badge " + type}>{TYPE_LABEL[type]}</span>}
           </div>
@@ -165,7 +179,18 @@ export default function ArticleView({ data, article, changeIdx, onSelectChange, 
                 <PlainText lines={curLines} figBase={figBase} />
               </>
             ) : (
-              <DiffView rows={diffRows} mode={diffMode} figBase={figBase} figMap={figMap} />
+              <>
+                {noBodyChange && (
+                  <p className="hint">
+                    {type === "add"
+                      ? "消滅前と同一の内容で復活（再制定）された版です。"
+                      : headDiff
+                        ? "この改正では見出しのみが変更され、本文に変更はありません。"
+                        : "この版では本文の変更はありません。"}
+                  </p>
+                )}
+                <DiffView rows={diffRows} head={headDiff} mode={diffMode} figBase={figBase} figMap={figMap} />
+              </>
             )
           ) : (
             <BlameView
@@ -279,12 +304,15 @@ function BlameView({
               className="blame-band"
               style={{ ["--age" as string]: depth }}
               title={
-                (isBase ? "収録開始時点から存在" : `${snap.date} 施行の改正で導入`) +
-                (snap.amendments[0] ? `｜${snap.amendments[0].lawNum}` : "")
+                (isBase
+                  ? "収録開始時点から存在"
+                  : isUndeterminedDate(snap.date)
+                    ? "施行日未確定の改正で導入"
+                    : `${snap.date} 施行の改正で導入`) + (snap.amendments[0] ? `｜${snap.amendments[0].lawNum}` : "")
               }
               onClick={() => onJump(ci)}
             >
-              {isRunStart ? (isBase ? "収録時" : snap.date.slice(0, 7)) : ""}
+              {isRunStart ? (isBase ? "収録時" : isUndeterminedDate(snap.date) ? "未確定" : snap.date.slice(0, 7)) : ""}
             </button>
             <p style={{ paddingLeft: `${l.i * 1.4}em` }}>
               <LineText line={l} figBase={figBase} />

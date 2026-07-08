@@ -23,6 +23,9 @@ export function loadLaw(id: string): Promise<Dataset> {
 
 export const todayStr = () => new Date().toISOString().slice(0, 10);
 
+/** e-Govは施行日未確定（施行日を定める政令の公布待ち等）を遠い将来の日付で表現する */
+export const isUndeterminedDate = (d: string) => d >= "2100-01-01";
+
 /** changes[idx] の変更種別。基準スナップショット（idx=0 かつ s=0）は変更ではない */
 export function changeType(article: Article, idx: number): ChangeType {
   const c = article.changes[idx];

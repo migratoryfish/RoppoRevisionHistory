@@ -1,4 +1,4 @@
-import { changeType, todayStr } from "../data";
+import { changeType, isUndeterminedDate, todayStr } from "../data";
 import type { Article, Dataset } from "../types";
 
 interface Props {
@@ -16,10 +16,11 @@ const AXIS_Y = 62;
 /** 機能2-B: 条文バージョンの時系列タイムライン（施行日ベース・時間比例軸） */
 export default function Timeline({ data, article, selectedIdx, onSelect }: Props) {
   const today = todayStr();
-  const dates = data.snapshots.map((s) => s.date);
+  // 施行日未確定（遠い将来の日付で表現される）は軸の範囲から除外し、右端に別枠で描く
+  const dates = data.snapshots.map((s) => s.date).filter((d) => !isUndeterminedDate(d));
   const min = Date.parse(dates[0]) - 180 * 86400_000;
   const max = Date.parse(dates[dates.length - 1]) + 180 * 86400_000;
-  const x = (d: string) => PAD + ((Date.parse(d) - min) / (max - min)) * (W - 2 * PAD);
+  const x = (d: string) => (isUndeterminedDate(d) ? W - 14 : PAD + ((Date.parse(d) - min) / (max - min)) * (W - 2 * PAD));
 
   const years: number[] = [];
   for (let y = new Date(min).getFullYear() + 1; y <= new Date(max).getFullYear(); y++) years.push(y);
@@ -63,11 +64,11 @@ export default function Timeline({ data, article, selectedIdx, onSelect }: Props
               className={`tl-dot ${type}${future ? " future" : ""}`}
             />
             <text x={cx} y={AXIS_Y + 24} className={"tl-date" + (sel ? " sel" : "")} transform={`rotate(28 ${cx} ${AXIS_Y + 24})`}>
-              {d}
+              {isUndeterminedDate(d) ? "未確定" : d}
             </text>
             <title>
-              {d}
-              {future ? "（未施行）" : ""}｜{type === "base" ? "収録開始" : type === "del" ? "削除" : type === "add" ? "追加" : "改正"}
+              {isUndeterminedDate(d) ? "施行日未確定" : d + (future ? "（未施行）" : "")}｜
+              {type === "base" ? "収録開始" : type === "del" ? "削除" : type === "add" ? "追加" : "改正"}
             </title>
           </g>
         );

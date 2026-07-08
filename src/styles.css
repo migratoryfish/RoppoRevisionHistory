@@ -635,6 +635,10 @@ table.diff .sign {
   user-select: none;
   font-weight: 700;
 }
+/* 見出し（条名・カッコ書き）の変更行: 本文の行と区切って表示 */
+tbody.head-diff td {
+  border-bottom: 1px solid var(--grid);
+}
 tr.add td.code, tr.add td.sign { background: var(--add-bg); }
 tr.del td.code, tr.del td.sign { background: var(--del-bg); }
 tr.add .sign { color: var(--add-ink); }

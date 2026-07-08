@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { TYPE_LABEL, changeType, displayTitle, todayStr } from "../data";
+import { TYPE_LABEL, changeType, displayTitle, isUndeterminedDate, todayStr } from "../data";
 import type { ChangeType, Dataset } from "../types";
 
 interface CellEntry {
@@ -94,8 +94,16 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
         >
           <div className="hm-corner" />
           {cols.map(({ snap, s }) => (
-            <div key={s} className={"hm-date" + (snap.date > today ? " future" : "")} title={snap.date + (snap.date > today ? "（未施行・施行予定）" : "")}>
-              {snap.date}
+            <div
+              key={s}
+              className={"hm-date" + (snap.date > today ? " future" : "")}
+              title={
+                isUndeterminedDate(snap.date)
+                  ? "施行日未確定（施行日を定める政令等の公布待ち）"
+                  : snap.date + (snap.date > today ? "（未施行・施行予定）" : "")
+              }
+            >
+              {isUndeterminedDate(snap.date) ? "未確定" : snap.date}
             </div>
           ))}
           {rows.map((row, ri) => {
@@ -130,7 +138,7 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
                       setTip({
                         x: e.clientX,
                         y: e.clientY,
-                        text: `${row.chapter}｜${snap.date}\n${n}か条が変更（追加${t.add}・改正${t.mod}・削除${t.del}）`,
+                        text: `${row.chapter}｜${isUndeterminedDate(snap.date) ? "施行日未確定" : snap.date}\n${n}か条が変更（追加${t.add}・改正${t.mod}・削除${t.del}）`,
                       });
                     }}
                     onMouseLeave={() => setTip(null)}
@@ -167,8 +175,11 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
       {selected && selSnap && (
         <section className="hm-detail">
           <h3>
-            {rows[selected.ri].part} {rows[selected.ri].chapter}｜{selSnap.date} 施行
-            {selSnap.date > today && <span className="badge future-badge">未施行</span>}
+            {rows[selected.ri].part} {rows[selected.ri].chapter}｜
+            {isUndeterminedDate(selSnap.date) ? "施行日未確定" : `${selSnap.date} 施行`}
+            {selSnap.date > today && !isUndeterminedDate(selSnap.date) && (
+              <span className="badge future-badge">未施行</span>
+            )}
           </h3>
           <ul className="amendments">
             {selSnap.amendments.map((am, i) => (

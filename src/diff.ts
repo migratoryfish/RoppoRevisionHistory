@@ -79,7 +79,8 @@ export function diffLineSets(oldLines: Line[], newLines: Line[]): DiffRow[] {
   return rows;
 }
 
-function inlineSegs(oldT: string, newT: string): { del: Seg[]; add: Seg[] } {
+/** 2つの文字列の文字レベル差分（本文の置換行のほか、見出しの変更表示にも使う） */
+export function inlineSegs(oldT: string, newT: string): { del: Seg[]; add: Seg[] } {
   const parts = diffChars(oldT, newT);
   const del: Seg[] = [];
   const add: Seg[] = [];

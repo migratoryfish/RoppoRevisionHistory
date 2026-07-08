@@ -219,7 +219,10 @@ function cmpKey(a, b) {
 
 // ---- スナップショット列 → 条ごとの変更履歴（共通ロジック） -----------------
 
-const lineText = (ls) => ls.map((l) => l.i + "\t" + l.t + (l.f ? "\t" + l.f : "")).join("\n");
+// 変更判定はクライアント側diff（src/diff.ts の lineKey）と同じ「インデント＋本文」で行う。
+// 添付パス f は law_revision_id を含み改正のたびに変わる（e-GovがPDFを再生成する）ため、
+// 比較に含めると本文が同一でも全様式が偽の改正イベントになる
+const lineText = (ls) => ls.map((l) => l.i + "\t" + l.t).join("\n");
 
 /**
  * snapshotArticleLists: スナップショットごとの条リスト（extractArticles / parseManualText の結果）
@@ -235,7 +238,6 @@ function buildArticleHistory(snapshotArticleLists) {
     const seen = new Set();
     for (const a of arts) {
       seen.add(a.key);
-      for (const l of a.lines) if (l.f) figRefs.add(l.f);
       let entry = articleMap.get(a.key);
       if (!entry) {
         entry = { changes: [] };
@@ -247,6 +249,8 @@ function buildArticleHistory(snapshotArticleLists) {
       const sig = a.title + " " + a.caption + " " + lineText(a.lines);
       if (!prev || prev.gone || prev.sig !== sig) {
         entry.changes.push({ s: si, title: a.title, caption: a.caption, lines: a.lines, sig });
+        // 添付は実際に収録される変更イベントが参照するものだけコピー対象にする
+        for (const l of a.lines) if (l.f) figRefs.add(l.f);
       }
     }
     for (const [key, entry] of articleMap) {
@@ -272,6 +276,20 @@ function buildArticleHistory(snapshotArticleLists) {
     };
   });
   return { articles, figRefs };
+}
+
+/**
+ * どの条の変更イベントからも参照されないスナップショットを取り除き、s を振り直す。
+ * （改正はあったが収録対象の本則・別表に変化がなかった施行日が改正マップの空列になるのを防ぐ）
+ */
+function pruneSnapshots(snapshots, articles) {
+  const used = new Set();
+  for (const a of articles) for (const c of a.changes) used.add(c.s);
+  if (used.size === snapshots.length) return snapshots;
+  const keep = snapshots.map((_, i) => i).filter((i) => used.has(i));
+  const remap = new Map(keep.map((oldIdx, newIdx) => [oldIdx, newIdx]));
+  for (const a of articles) for (const c of a.changes) c.s = remap.get(c.s);
+  return keep.map((i) => snapshots[i]);
 }
 
 // ---- e-Gov法令 1件分のデータセット構築 -------------------------------------
@@ -311,7 +329,10 @@ function buildLaw(cfg) {
       category: cfg.category,
       latestOnly: cfg.latestOnly === true,
       generated: new Date().toISOString().slice(0, 10),
-      snapshots: snapshots.map(({ date, amendments }) => ({ date, amendments })),
+      snapshots: pruneSnapshots(
+        snapshots.map(({ date, amendments }) => ({ date, amendments })),
+        articles,
+      ),
       articles,
     },
     figRefs,
@@ -386,7 +407,7 @@ function buildManual(slug) {
     source: meta.source ?? "",
     sourceNote: meta.sourceNote ?? "",
     generated: new Date().toISOString().slice(0, 10),
-    snapshots,
+    snapshots: pruneSnapshots(snapshots, articles),
     articles,
   };
 }
@@ -394,6 +415,8 @@ function buildManual(slug) {
 // ---- 全体ループ ------------------------------------------------------------
 
 if (existsSync(join(outDir, "minpo.json"))) rmSync(join(outDir, "minpo.json"));
+// 参照されなくなった添付（旧版の様式PDF等）を残さないよう作り直す
+rmSync(join(outDir, "attachments"), { recursive: true, force: true });
 
 const index = [];
 let totalBytes = 0;
