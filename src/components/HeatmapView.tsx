@@ -85,7 +85,7 @@ export default function HeatmapView({ data, onOpenArticle }: Props) {
   return (
     <div className="heatmap-view">
       <p className="hint">
-        セルの色が濃いほど、その施行日にその章で多くの条文が変更されています。セルをクリックすると変更された条の一覧が表示されます。
+        セルの色が濃いほど、その施行日にその章で多くの条文が変更されています。セルをクリックすると、変更された条の一覧がこの画面の下部（凡例の下）に表示されます。
       </p>
       <div className="hm-scroll">
         <div
